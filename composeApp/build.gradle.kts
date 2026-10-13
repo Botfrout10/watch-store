@@ -51,6 +51,7 @@ kotlin {
             implementation(libs.compose.resources)
 
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.datastore.preferences)
             implementation(libs.navigation3.ui)
             implementation(libs.lifecycle.viewmodel)
             implementation(libs.lifecycle.viewmodel.compose)

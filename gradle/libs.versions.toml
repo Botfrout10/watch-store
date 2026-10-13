@@ -8,6 +8,7 @@ androidxActivityCompose = "1.13.0"
 androidxLifecycle = "2.10.0"
 navigation3 = "1.1.2"
 kotlinxSerialization = "1.11.0"
+datastore = "1.2.1"
 
 # Compose Multiplatform 1.12.x ships androidx compose 1.12.x, which requires
 # compiling against API 37+. AGP auto-downloads the platform on first build.
@@ -28,6 +29,7 @@ compose-material3 = { module = "org.jetbrains.compose.material3:material3", vers
 compose-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version = "1.7.3" }
 compose-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivityCompose" }
 navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel", version.ref = "androidxLifecycle" }

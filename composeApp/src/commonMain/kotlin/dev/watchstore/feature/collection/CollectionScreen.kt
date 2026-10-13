@@ -66,6 +66,7 @@ fun CollectionScreen(
             .background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 28.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Column(

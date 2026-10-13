@@ -186,7 +186,7 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 6.dp),
+                            .padding(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.spacedBy(13.dp),
                     ) {
                         row.forEach { product ->
@@ -196,7 +196,9 @@ fun HomeScreen(
                                 onAddToCart = { onAddToCart(product.id) },
                                 isFavorite = product.id in favorites,
                                 onToggleFavorite = { onToggleFavorite(product.id) },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(bottom = 14.dp),
                             )
                         }
                         if (row.size == 1) Spacer(Modifier.weight(1f))

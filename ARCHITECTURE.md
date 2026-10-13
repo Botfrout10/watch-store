@@ -77,11 +77,19 @@ diffs. Editing data is still a one-line change.
 ## State
 
 `StoreViewModel` is app-scoped and owns the bag and favourites — the two pieces of
-state that must outlive navigation. It is exposed via `viewModel { }` from
-`lifecycle-viewmodel-compose`.
+state that must outlive navigation and process death. It is exposed via
+`viewModel { }` from `lifecycle-viewmodel-compose`.
 
-**Neither is persisted.** Both reset on process death. DataStore (KMP) is the
-intended fix and is deferred rather than half-built; see `PLAN.md`.
+**Persistence:** `UserStateStore` (`commonMain`) wraps androidx DataStore.
+Preferences files are flat maps, so the bag is stored one entry per product id
+under a `cart.` prefix and favourites under `fav.`; reads filter the key set by
+prefix. Only the *factory* is `expect`/`actual` — the store itself, including all
+mapping logic, is shared.
+
+The store is the **single source of truth**: `StoreViewModel` exposes DataStore's
+flows via `stateIn` rather than mirroring them into in-memory `MutableStateFlow`s.
+That removes a class of bug where the UI and disk disagree after a failed write,
+at the cost of one write round-trip per mutation.
 
 ## Navigation
 

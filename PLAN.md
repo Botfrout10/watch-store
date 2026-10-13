@@ -49,18 +49,20 @@
 - Fixed: dropped `androidResources { enable = true }` during the AGP 9 migration,
   so drawables were prepared but never packaged (`MissingResourceException`)
 
+**Persistence**
+- Bag and favourites survive process death via androidx DataStore (1.2.1, KMP)
+- `UserStateStore` interface in `commonMain`; only the factory is
+  `expect`/`actual`
+- DataStore is the single source of truth — `StoreViewModel` exposes its flows
+  via `stateIn` instead of mirroring them into in-memory state, so the UI and
+  disk cannot disagree after a failed write
+- Verified by force-stopping the app and relaunching
+
 **Docs**
-- `AGENTS.md` — commands plus nine environment gotchas found the hard way
+- `AGENTS.md` — commands plus the environment gotchas found the hard way
 - `DESIGN.md`, `ARCHITECTURE.md`, `PLAN.md`
 
 ## Next
-
-### Persistence
-
-Bag and favourites reset on process death.
-
-- DataStore (KMP) for both — small, and the obvious fix
-- Room only if the catalogue ever needs to work fully offline
 
 ### Also worth doing
 
