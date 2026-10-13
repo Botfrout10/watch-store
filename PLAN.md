@@ -68,9 +68,23 @@
 - Screen titles on Collection/Saved were Inter while Home used the serif — now
   consistent
 
+**Backend**
+- Catalogue fetched over HTTP via Ktor 3.6; `docs/api.md` is the contract
+- `ProductRepository` reduced to one `loadCatalog()` returning a `CatalogSnapshot`
+  that records which source answered — `byId`/`byKind`/`search` are pure functions
+  on the snapshot, so `suspend` never leaks into a screen
+- `FallbackProductRepository` falls back to the compiled-in seed on any failure;
+  Profile shows `Live` or `Offline` so stale stock is never invisible
+- Client tolerates a server ahead of or behind it: unknown keys ignored, unknown
+  enum values degrade to a default, empty or non-200 treated as failure
+- `server/` derives its fixture from `SeedCatalog.kt` with the same drift guard
+  used by the image generator
+- Verified both ways on device: server up -> "Live", server killed -> "Offline"
+  with the full UI still rendering
+
 **Docs**
 - `AGENTS.md` — commands plus the environment gotchas found the hard way
-- `DESIGN.md`, `ARCHITECTURE.md`, `PLAN.md`
+- `DESIGN.md`, `ARCHITECTURE.md`, `docs/api.md`, `PLAN.md`
 
 ## Next
 
@@ -87,7 +101,11 @@
 
 ### Still worth doing
 
-- Wire Ktor behind `ProductRepository` when a backend exists
+- A real backend behind `docs/api.md` — the dev fixture in `server/` proves the
+  contract, but shipping means hosting that contract and pointing
+  `DEV_API_BASE_URL` at it
+- Pull-to-refresh and caching so a returning user sees fresh stock without
+  waiting on the network
 - Tighten screens to accept UI state instead of the view model
 - Real 3D: Compose Scene / Filament-KMP both work across Android and iOS from
   Kotlin, but need actual `.glb` models. The generated imagery is the current

@@ -27,10 +27,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import dev.watchstore.core.designsystem.brandDisplay
 import dev.watchstore.core.ui.StoreTopBar
+import dev.watchstore.data.repository.CatalogSource
 
 @Composable
 fun ProfileScreen(
     cartCount: Int,
+    catalogSource: CatalogSource?,
     onOpenCart: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -142,9 +144,12 @@ fun ProfileScreen(
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
+                    Spacer(Modifier.height(6.dp))
+                    SourceRow(catalogSource)
+                    Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "Catalogue is seeded locally and the bag resets when the app " +
-                            "restarts. Neither is wired to a backend yet.",
+                        text = "Your bag and saved items persist on this device. " +
+                            "Checkout is not wired up.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -152,4 +157,21 @@ fun ProfileScreen(
             }
         }
     }
+}
+/**
+ * Which source answered the catalogue request.
+ *
+ * Shown rather than only logged, because someone looking at stale stock should
+ * be able to find out whether the network was involved.
+ */
+@Composable
+private fun SourceRow(source: CatalogSource?) {
+    val (label, tone) = when (source) {
+        CatalogSource.REMOTE ->
+            "Live - fetched from the catalogue API" to MaterialTheme.colorScheme.primary
+        CatalogSource.SEED ->
+            "Offline - using the built-in catalogue" to MaterialTheme.colorScheme.error
+        null -> "Loading catalogue..." to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Text(text = label, style = MaterialTheme.typography.bodySmall, color = tone)
 }

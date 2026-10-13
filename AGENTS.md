@@ -100,10 +100,25 @@ bun install --cwd tools
 bun run tools/gen-mock-images.ts
 ```
 
-Writes one WebP per product into
+Writes one WebP per finish into
 `composeApp/src/commonMain/composeResources/drawable/`. The script parses
 `SeedCatalog.kt` and **fails the run** if its manifest has drifted from it, so
-adding a product without artwork is caught immediately.
+adding a product without artwork is caught immediately. It also emits
+`ProductImages.kt` itself, so the compile-time resource mapping can never drift
+from the files on disk.
+
+Catalogue API (development):
+
+```bash
+bun run server            # http://127.0.0.1:8787, emulator sees 10.0.2.2:8787
+```
+
+Also derived from `SeedCatalog.kt`, with the same drift guard. The app falls back
+to the compiled-in seed if this is not running — Profile shows which source
+answered. Contract: `docs/api.md`.
+
+**The emulator maps `10.0.2.2` to the host loopback.** On a physical device
+change `DEV_API_BASE_URL` in `HttpClientFactory.android.kt` to the host's LAN IP.
 
 ## Conventions
 

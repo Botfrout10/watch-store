@@ -5,26 +5,52 @@ import androidx.lifecycle.viewModelScope
 import dev.watchstore.data.model.CartLine
 import dev.watchstore.data.model.Product
 import dev.watchstore.data.model.ProductKind
+import dev.watchstore.data.remote.ApiProductRepository
+import dev.watchstore.data.remote.createHttpClient
+import dev.watchstore.data.remote.defaultApiBaseUrl
+import dev.watchstore.data.repository.CatalogSnapshot
+import dev.watchstore.data.repository.CatalogSource
+import dev.watchstore.data.repository.FallbackProductRepository
 import dev.watchstore.data.repository.ProductRepository
 import dev.watchstore.data.repository.SeedProductRepository
+import dev.watchstore.data.repository.byId
+import dev.watchstore.data.repository.byKind
+import dev.watchstore.data.repository.cartLines
+import dev.watchstore.data.repository.featured
+import dev.watchstore.data.repository.favoriteProducts
+import dev.watchstore.data.repository.popular
+import dev.watchstore.data.repository.search
 import dev.watchstore.data.store.UserStateStore
 import dev.watchstore.data.store.createUserStateStore
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
  * App-scoped state.
  *
- * The bag and favourites come straight from [UserStateStore] rather than being
- * mirrored into in-memory flows: persistence is the single source of truth, so
- * there is no chance of the UI and the disk disagreeing after a failed write.
+ * The catalogue loads asynchronously and reports which source answered, so the
+ * UI can tell the user when it fell back to the seed rather than silently
+ * showing stale data.
+ *
+ * The bag and favourites come straight from [UserStateStore]: persistence is the
+ * single source of truth, so the UI and disk cannot disagree after a failed
+ * write.
  */
 class StoreViewModel(
-    private val repository: ProductRepository = SeedProductRepository(),
+    private val repository: ProductRepository = defaultRepository(),
     private val store: UserStateStore = createUserStateStore(),
 ) : ViewModel() {
+
+    // Explicit type parameter: `Loading` is a data object, so without this the flow
+    // would infer MutableStateFlow<CatalogState.Loading> and reject Ready.
+    private val _catalog = MutableStateFlow<CatalogState>(CatalogState.Loading)
+
+    /** Loading, then Ready. The seed guarantees Ready always arrives. */
+    val catalog: StateFlow<CatalogState> = _catalog.asStateFlow()
 
     val cart: StateFlow<Map<String, Int>> = store.cart.stateIn(
         scope = viewModelScope,
@@ -38,25 +64,35 @@ class StoreViewModel(
         initialValue = emptySet(),
     )
 
-    val heroes = repository.heroes
-    val featured: List<Product> = repository.featured()
-    val popular: List<Product> = repository.popular()
+    init {
+        viewModelScope.launch {
+            _catalog.value = CatalogState.Ready(repository.loadCatalog())
+        }
+    }
 
-    fun product(id: String): Product? = repository.byId(id)
-    fun byKind(kind: ProductKind): List<Product> = repository.byKind(kind)
-    fun search(query: String): List<Product> = repository.search(query)
+    private val snapshot: CatalogSnapshot?
+        get() = (_catalog.value as? CatalogState.Ready)?.snapshot
 
-    fun products(): List<Product> = repository.products()
+    // ---- Catalogue ----------------------------------------------------------
 
-    fun favoriteProducts(): List<Product> =
-        favorites.value.mapNotNull(repository::byId)
+    val heroes get() = snapshot?.heroes.orEmpty()
+    val featured: List<Product> get() = snapshot?.featured().orEmpty()
+    val popular: List<Product> get() = snapshot?.popular().orEmpty()
+    val products: List<Product> get() = snapshot?.products.orEmpty()
+
+    fun product(id: String): Product? = snapshot?.byId(id)
+    fun byKind(kind: ProductKind): List<Product> = snapshot?.byKind(kind).orEmpty()
+    fun search(query: String): List<Product> = snapshot?.search(query).orEmpty()
+    fun favoriteProducts(): List<Product> = snapshot?.favoriteProducts(favorites.value).orEmpty()
+
+    /** Hero product lookup, used by the home carousel. */
+    fun heroProducts(): Map<String, Product> =
+        heroes.mapNotNull { hero -> product(hero.productId)?.let { hero.productId to it } }.toMap()
+
+    // ---- Bag ----------------------------------------------------------------
 
     fun cartCount(): Int = cart.value.values.sum()
-
-    fun cartLines(): List<CartLine> =
-        cart.value.mapNotNull { (id, qty) -> repository.byId(id)?.let { CartLine(it, qty) } }
-
-    fun cartSubtotalCents(): Long = cartLines().sumOf { it.product.priceCents * it.quantity }
+    fun cartLines(): List<CartLine> = snapshot?.cartLines(cart.value).orEmpty()
 
     fun addToCart(id: String) {
         val next = cart.value.toMutableMap()
@@ -77,4 +113,28 @@ class StoreViewModel(
     }
 
     fun isFavorite(id: String): Boolean = id in favorites.value
+
+    companion object {
+        /**
+         * Network first, seed always available.
+         *
+         * Kept in a companion so the ViewModel's constructor stays
+         * injectable for tests without forcing every caller to build a client.
+         */
+        fun defaultRepository(): ProductRepository = FallbackProductRepository(
+            primary = ApiProductRepository(createHttpClient(), defaultApiBaseUrl()),
+            secondary = SeedProductRepository(),
+        )
+    }
+}
+
+sealed interface CatalogState {
+    data object Loading : CatalogState
+
+    data class Ready(val snapshot: CatalogSnapshot) : CatalogState
+
+    val source: CatalogSource?
+        get() = (this as? Ready)?.snapshot?.source
+
+    val isReady: Boolean get() = this is Ready
 }

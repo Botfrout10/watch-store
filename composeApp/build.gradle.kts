@@ -52,6 +52,13 @@ kotlin {
 
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.datastore.preferences)
+
+            // Network data source. OkHttp is the Android engine; the rest is
+            // shared, so iOS only needs its own engine in commonMain deps.
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.ktor.content.negotiation)
+            implementation(libs.ktor.serialization.json)
             implementation(libs.navigation3.ui)
             implementation(libs.lifecycle.viewmodel)
             implementation(libs.lifecycle.viewmodel.compose)

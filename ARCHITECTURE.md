@@ -9,7 +9,8 @@
 | Gradle | 9.8.1 · AGP 9.4.1 |
 | Android | `compileSdk` 37, `minSdk` 26, JVM target 17 |
 | State | `org.jetbrains.androidx.lifecycle` ViewModel + StateFlow |
-| Data | Seeded Kotlin catalogue behind a repository interface |
+| Data | Network via Ktor 3.6, seeded catalogue behind a repository interface |
+| Persist | DataStore (KMP) for bag and favourites |
 
 ## The central decision: KMP, Android-first
 
@@ -62,17 +63,38 @@ composeApp/src/commonMain/kotlin/dev/watchstore/
 ## Data flow
 
 ```
-SeedCatalog -> ProductRepository (interface) -> StoreViewModel -> screens
+server/ (dev fixture) ──HTTP──┐
+                              ├─> ApiProductRepository ─┐
+SeedCatalog ─────────────────┘                          ├─> FallbackProductRepository
+                                                         └─> SeedProductRepository
+                                                                      │
+                                                            CatalogSnapshot
+                                                                      │
+                                                            StoreViewModel
+                                                                      │
+                                                                 screens
 ```
 
-`ProductRepository` is the only seam between UI and data source. Nothing above it
-knows the catalogue is seeded in Kotlin, so a Ktor-backed implementation swaps in
-without touching a composable, the view model, or the model. Ktor is deliberately
-not wired yet — a dependency with no live endpoint is just weight.
+`ProductRepository` is the only seam between UI and data source. It has one
+method, `loadCatalog()`, returning a `CatalogSnapshot` that records **which
+source answered**.
 
-The catalogue is Kotlin rather than JSON because it is type-checked at compile
-time, needs no file I/O (identical on every target), and stays reviewable in
-diffs. Editing data is still a one-line change.
+**Why a single call, not a dozen query methods:** a remote source cannot answer
+`byId` synchronously, and pretending otherwise is what pushes `suspend` into
+every screen. The store loads once, then derives — `byId`, `byKind`, `search`,
+`featured`, `cartLines` are all pure functions on the snapshot.
+
+**Fallback is deliberate.** `FallbackProductRepository` tries the network, then
+the compiled-in seed. A retail app that shows an empty catalogue because the
+network blipped is worse than one showing slightly stale stock. Whether the
+fallback fired is surfaced on the Profile screen rather than swallowed.
+
+`StoreViewModel` exposes `CatalogState` (`Loading` → `Ready`). The seed guarantees
+`Ready` always arrives, so the loading state is brief and never an error state.
+
+Wire format is documented in `docs/api.md`, and the client is written to survive
+a server ahead of or behind it: unknown keys ignored, unknown enum values degrade
+to a default, empty or non-200 treated as failure rather than a half-render.
 
 ## State
 
@@ -102,12 +124,14 @@ Nav3 later is confined to `WatchStoreApp.kt`.
 
 ## Deliberate deviations
 
-- **No Coil yet.** Bundled `composeResources` drawables load via
-  `painterResource`; Coil is only needed for remote images.
-- **No Room yet.** Nothing requires local persistence beyond bag and favourites.
+- **No Coil.** Bundled `composeResources` drawables load via `painterResource`;
+  Coil is only needed for remote images.
+- **No Room.** Nothing requires local persistence beyond bag and favourites.
 - **No separate design-system module.** Premature for one app.
 - **Screens receive the view model directly** rather than a UI-state class. Worth
   tightening once screens grow more state.
+- **Artwork is not served by the API.** Generated locally and keyed by product
+  id, so the catalogue can move to a real backend without shipping image URLs.
 
 ## iOS bring-up (on a Mac)
 
