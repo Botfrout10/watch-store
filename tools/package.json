@@ -1,0 +1,11 @@
+{
+  "name": "watch-store-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen-images": "bun run gen-mock-images.ts"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^1.0.11"
+  }
+}

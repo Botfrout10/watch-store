@@ -60,6 +60,7 @@ private fun watch(
     isFeatured = featured,
     isPopular = popular,
     artSeed = seed,
+    image = imageFor(id),
 )
 
 private fun watchBox(
@@ -94,6 +95,7 @@ private fun watchBox(
     isFeatured = featured,
     isPopular = popular,
     artSeed = seed,
+    image = imageFor(id),
 )
 
 private fun accessory(
@@ -123,6 +125,7 @@ private fun accessory(
     rating = 4.4,
     reviewCount = 60 + seed,
     artSeed = seed,
+    image = imageFor(id),
 )
 
 val seedProducts: List<Product> = listOf(

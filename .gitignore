@@ -15,5 +15,12 @@ local.properties
 .DS_Store
 Thumbs.db
 
-# Generated product imagery - regenerate with `bun run tools/gen-mock-images.ts`
-composeApp/src/commonMain/composeResources/drawable/products/
+# Node (image generator only — the built artefacts are committed on purpose)
+node_modules/
+tools/node_modules/
+
+# NOTE: generated product imagery under
+# composeApp/src/commonMain/composeResources/drawable/ IS committed.
+# Compose Resources accessors are compile-time symbols, so a clone without the
+# files would fail to compile. They total ~0.3 MB and are reproducible with
+# `bun run tools/gen-mock-images.ts`.

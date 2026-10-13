@@ -64,6 +64,26 @@ These cost real time to rediscover. They are all deliberate.
    `gradle/libs.versions.toml`. Note Material3 is versioned separately from the
    rest of Compose.
 
+9. **`androidResources { enable = true }` is mandatory.** Without it,
+   `copyNonXmlValueResourcesForAndroidMain` reports `NO-SOURCE`: resource
+   *accessors* still generate and the code compiles, but the asset files never
+   reach the APK and the app dies at runtime with `MissingResourceException`.
+   This cost a debugging round — treat a silent `NO-SOURCE` as a red flag.
+
+## Tools
+
+Product artwork is generated, not hand-drawn:
+
+```bash
+bun install --cwd tools
+bun run tools/gen-mock-images.ts
+```
+
+Writes one WebP per product into
+`composeApp/src/commonMain/composeResources/drawable/`. The script parses
+`SeedCatalog.kt` and **fails the run** if its manifest has drifted from it, so
+adding a product without artwork is caught immediately.
+
 ## Conventions
 
 - All UI lives in `composeApp/src/commonMain`. Do not put Android APIs in
@@ -71,9 +91,11 @@ These cost real time to rediscover. They are all deliberate.
 - Screens are dumb: they render state and emit callbacks. Business logic belongs
   in `StoreViewModel` or the repository.
 - Never touch `local.properties` (gitignored). It points at the SDK.
-- Never commit build output. Generated product imagery under
-  `composeResources/drawable/products/` is gitignored on purpose — regenerate
-  with `bun run tools/gen-mock-images.ts`.
+- Never commit build output.
+- **Generated artwork under `composeResources/drawable/` IS committed.** Compose
+  Resources accessors are compile-time symbols, so a clone without the files
+  would fail to compile. They total ~0.3 MB. Regenerate rather than edit them by
+  hand.
 
 ## Verification
 

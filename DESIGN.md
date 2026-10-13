@@ -63,20 +63,38 @@ profiles of the products.
 
 ## Imagery
 
-`ProductImage` draws a lit silhouette on a warm backdrop seeded per product, so
-the catalogue reads as one curated set rather than one placeholder repeated.
+Every product gets its **own generated shot** — one shared placeholder would read
+as clip-art next to the typography and undo the premium tone.
 
-Three rules:
+`tools/gen-mock-images.ts` (Bun + `@napi-rs/canvas`) renders one 1200×1500 (4:5)
+WebP per product into `composeResources/drawable/`. Each is composed on a warm
+**studio sweep** that is deliberately lighter than the app background, so dark
+products (Obsidian, Midnight) still read as photographs rather than black
+rectangles. Every asset gets a vignette, so nothing looks like a flat fill.
 
-1. **Every product gets a different backdrop**, derived from `artSeed` — spot
-   position, warmth and spread all vary.
-2. **Aspect ratio is owned by the caller**, not the renderer: `4:5` for cards,
-   `3:4` for detail. Real imagery drops into the identical slot later.
-3. **Contact shadows are built from stacked translucent ovals**, because blur is
-   not available identically across targets.
+- **Watches** — brushed-metal case via a six-stop linear gradient, tapered strap
+  with stitching, recessed dial, 12 hour markers (4 longer), hands set to 10:10,
+  crystal sheen and a rim light on the lower right.
+- **Boxes** — lid proud of the body, gradient body with a left-edge highlight, a
+  seam line, a base shadow for weight, and a brass clasp with a keyhole.
+- **Accessories** — band with link separations, end lugs, gold clasp.
 
-This is a placeholder. Phase B replaces it with generated WebP assets — same slot,
-no reflow. See `PLAN.md`.
+Tone and backdrop vary per product (`artSeed`), so the catalogue reads as one
+curated set rather than a repeat.
+
+Three rules hold in the app:
+
+1. **Aspect ratio is owned by the caller**, never the renderer — `4:5` for cards,
+   `3:4` for detail. Hero artwork is 4:5, so the detail hero crops rather than
+   squashes.
+2. **`ProductImage` falls back to a drawn silhouette** when a product has no
+   artwork, so the catalogue never breaks.
+3. **Soft shadows are built from gradients**, not blur filters, which are not
+   available identically across targets.
+
+Artwork is **committed**, not gitignored: Compose Resources accessors are
+compile-time symbols, so a clone without the files would not compile. The whole
+set is ~0.3 MB and reproducible from the generator.
 
 ## Components
 

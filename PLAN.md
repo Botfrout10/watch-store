@@ -38,25 +38,22 @@
 - Hero pagination dots collided with the CTA
 - Product descriptions read as sentence fragments
 
+**Imagery (Phase B)**
+- `tools/gen-mock-images.ts` generates one WebP per product via `@napi-rs/canvas`
+  — no `sharp` needed, it installs and runs cleanly on Windows
+- Manifest is cross-checked against `SeedCatalog.kt`; drift fails the run
+- Watches: brushed-metal case, stitched strap, recessed dial, 10:10 hands, sheen
+- Boxes: lid, seam, brass clasp with keyhole; Accessories: band, lugs, clasp
+- `ProductImage` renders artwork when present, falls back to the drawn silhouette
+- Artwork is committed (~0.3 MB) so a fresh clone compiles
+- Fixed: dropped `androidResources { enable = true }` during the AGP 9 migration,
+  so drawables were prepared but never packaged (`MissingResourceException`)
+
+**Docs**
+- `AGENTS.md` — commands plus nine environment gotchas found the hard way
+- `DESIGN.md`, `ARCHITECTURE.md`, `PLAN.md`
+
 ## Next
-
-### Phase B — real product imagery (the big one)
-
-Placeholders are the weakest part of the app today. Replace
-`ProductImage`'s drawing with generated assets — **same slot, no reflow**.
-
-- `tools/gen-mock-images.ts` (Bun) emits unique WebP per product into
-  `composeApp/src/commonMain/composeResources/drawable/products/`
-- Watches as 3/4 discs with bezel gradient, specular sheen, contact shadow
-- Boxes as angled forms with cast shadow and a brass clasp
-- Each on its own warm radial backdrop, matching the current seed logic
-- Catalog points at the files; emitted binaries stay gitignored
-- ⚠️ Rasterising SVG likely needs `sharp` — verify it installs cleanly under Bun
-  on Windows, else render PNG directly
-
-Once real assets exist, the long-term path is Compose Scene / Filament-KMP for
-actual 3D. Both now work across Android and iOS from Kotlin, but they need real
-`.glb` models that do not exist yet.
 
 ### Persistence
 
@@ -72,6 +69,9 @@ Bag and favourites reset on process death.
 - Wire Ktor behind `ProductRepository` when a backend exists
 - `@Preview` coverage for both colour schemes
 - Tighten screens to accept UI state instead of the view model
+- Real 3D: Compose Scene / Filament-KMP both work across Android and iOS from
+  Kotlin, but need actual `.glb` models. The generated imagery is the current
+  ceiling until those exist.
 
 ## Not doing
 

@@ -14,6 +14,13 @@ kotlin {
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
+        // Without this, copyNonXmlValueResourcesForAndroidMain reports NO-SOURCE
+        // and composeResources drawables are prepared but never packaged into the
+        // APK — which fails at runtime with MissingResourceException.
+        androidResources {
+            enable = true
+        }
+
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
