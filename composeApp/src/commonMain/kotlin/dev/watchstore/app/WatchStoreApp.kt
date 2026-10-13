@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.watchstore.core.designsystem.WatchStoreTheme
+import dev.watchstore.data.model.ProductKind
 import dev.watchstore.feature.cart.CartScreen
 import dev.watchstore.feature.collection.CollectionScreen
 import dev.watchstore.feature.detail.DetailScreen
@@ -22,6 +23,7 @@ import dev.watchstore.feature.favorites.FavoritesScreen
 import dev.watchstore.feature.home.HomeScreen
 import dev.watchstore.feature.profile.ProfileScreen
 import dev.watchstore.feature.store.StoreViewModel
+import dev.watchstore.platform.shareContent
 
 /**
  * Destinations.
@@ -44,9 +46,9 @@ private fun Destination.asTab(): AppTab? = when (this) {
     Destination.Home -> AppTab.Home
     Destination.Collection -> AppTab.Collection
     Destination.Favorites -> AppTab.Favorites
-    Destination.Bag -> AppTab.Bag
     Destination.Profile -> AppTab.Profile
-    is Destination.Detail -> null
+    // The bag is reachable from the top bar, not the bottom bar.
+    Destination.Bag, is Destination.Detail -> null
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -62,14 +64,17 @@ fun WatchStoreApp() {
         val current = backStack.last()
         val cartCount = cart.values.sum()
 
+        // Keyed by product id — the hero looks its artwork up with `hero.productId`.
+        val heroProducts = remember(store.heroes) {
+            store.heroes
+                .mapNotNull { hero -> store.product(hero.productId)?.let { hero.productId to it } }
+                .toMap()
+        }
+
         fun popBack() {
             if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
         }
 
-        // BackHandler is deprecated in favour of NavigationEventHandler, but that
-        // replacement does not exist in Compose Multiplatform 1.12.1 yet — the
-        // ui-backhandler artifact only ships BackHandler_androidKt.
-        @Suppress("DEPRECATION")
         BackHandler(enabled = backStack.size > 1) { popBack() }
 
         val openDetail: (String) -> Unit = { backStack.add(Destination.Detail(it)) }
@@ -81,7 +86,6 @@ fun WatchStoreApp() {
                     AppTab.Home -> Destination.Home
                     AppTab.Collection -> Destination.Collection
                     AppTab.Favorites -> Destination.Favorites
-                    AppTab.Bag -> Destination.Bag
                     AppTab.Profile -> Destination.Profile
                 },
             )
@@ -96,14 +100,15 @@ fun WatchStoreApp() {
                 when (val destination = current) {
                     Destination.Home -> HomeScreen(
                         heroes = store.heroes,
+                        heroProducts = heroProducts,
                         popular = store.popular,
-                        featured = store.featured,
                         favorites = favorites,
                         cartCount = cartCount,
                         onProductClick = openDetail,
                         onToggleFavorite = store::toggleFavorite,
-                        onBrowseKind = { selectTab(AppTab.Collection) },
-                        onOpenCart = { selectTab(AppTab.Bag) },
+                        onAddToCart = store::addToCart,
+                        onOpenCart = { backStack.add(Destination.Bag) },
+                        onOpenKind = { selectTab(AppTab.Collection) },
                     )
 
                     Destination.Collection -> CollectionScreen(
@@ -112,7 +117,8 @@ fun WatchStoreApp() {
                         cartCount = cartCount,
                         onProductClick = openDetail,
                         onToggleFavorite = store::toggleFavorite,
-                        onOpenCart = { selectTab(AppTab.Bag) },
+                        onAddToCart = store::addToCart,
+                        onOpenCart = { backStack.add(Destination.Bag) },
                     )
 
                     Destination.Favorites -> FavoritesScreen(
@@ -120,7 +126,7 @@ fun WatchStoreApp() {
                         cartCount = cartCount,
                         onProductClick = openDetail,
                         onBrowse = { selectTab(AppTab.Collection) },
-                        onOpenCart = { selectTab(AppTab.Bag) },
+                        onOpenCart = { backStack.add(Destination.Bag) },
                     )
 
                     Destination.Bag -> CartScreen(
@@ -129,12 +135,12 @@ fun WatchStoreApp() {
                         onProductClick = openDetail,
                         onSetQuantity = store::setQuantity,
                         onBrowse = { selectTab(AppTab.Collection) },
-                        onOpenCart = {},
+                        onBack = ::popBack,
                     )
 
                     Destination.Profile -> ProfileScreen(
                         cartCount = cartCount,
-                        onOpenCart = { selectTab(AppTab.Bag) },
+                        onOpenCart = { backStack.add(Destination.Bag) },
                     )
 
                     is Destination.Detail -> {
@@ -149,6 +155,9 @@ fun WatchStoreApp() {
                                 quantityInCart = cart[product.id] ?: 0,
                                 onBack = ::popBack,
                                 onToggleFavorite = { store.toggleFavorite(product.id) },
+                                onShare = { name ->
+                                    shareContent(name, "${product.brand} ${product.name} — Atelier")
+                                },
                                 onAddToCart = { store.addToCart(product.id) },
                                 onOpenPaired = openDetail,
                                 onAddPaired = { product.pairsWithId?.let(store::addToCart) },
@@ -159,11 +168,7 @@ fun WatchStoreApp() {
             }
 
             current.asTab()?.let { tab ->
-                AppBottomBar(
-                    current = tab,
-                    cartCount = cartCount,
-                    onSelect = selectTab,
-                )
+                AppBottomBar(current = tab, onSelect = selectTab)
             }
         }
     }

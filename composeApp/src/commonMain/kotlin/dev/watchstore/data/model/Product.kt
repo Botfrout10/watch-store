@@ -61,8 +61,11 @@ data class Product(
     val isPopular: Boolean = false,
     /** Stable seed so the placeholder gradient and later generated image match. */
     val artSeed: Int = 0,
-    /** Generated artwork. Null falls back to ProductImage's drawn silhouette. */
-    val image: org.jetbrains.compose.resources.DrawableResource? = null,
+    /**
+     * Artwork gallery — one shot per finish, so picking a colour swatch changes
+     * the photograph. Empty falls back to ProductImage's drawn silhouette.
+     */
+    val gallery: List<org.jetbrains.compose.resources.DrawableResource> = emptyList(),
 )
 
 data class Hero(
@@ -71,6 +74,8 @@ data class Hero(
     val title: String,
     val subtitle: String,
     val cta: String,
+    /** Product shown in the hero panel. */
+    val productId: String,
     val targetKind: ProductKind,
 )
 

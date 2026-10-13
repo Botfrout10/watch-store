@@ -50,7 +50,7 @@ private fun watch(
     name = name,
     brand = brand,
     tagline = tagline,
-    description = description.ifEmpty { "$brand $name. $tagline Crafted in small runs and finished by hand." },
+    description = description.ifEmpty { "$brand $name. $tagline. Crafted in small runs and finished by hand." },
     priceCents = price,
     finishes = tones,
     highlights = watchHighlights,
@@ -60,7 +60,7 @@ private fun watch(
     isFeatured = featured,
     isPopular = popular,
     artSeed = seed,
-    image = imageFor(id),
+    gallery = galleryFor(id),
 )
 
 private fun watchBox(
@@ -95,7 +95,7 @@ private fun watchBox(
     isFeatured = featured,
     isPopular = popular,
     artSeed = seed,
-    image = imageFor(id),
+    gallery = galleryFor(id),
 )
 
 private fun accessory(
@@ -125,7 +125,7 @@ private fun accessory(
     rating = 4.4,
     reviewCount = 60 + seed,
     artSeed = seed,
-    image = imageFor(id),
+    gallery = galleryFor(id),
 )
 
 val seedProducts: List<Product> = listOf(
@@ -278,18 +278,21 @@ val seedHeroes: List<Hero> = listOf(
         id = "hero-craft", eyebrow = "Autumn collection",
         title = "Built to\noutlive us",
         subtitle = "Small-run cases in walnut, oak and painted steel.",
-        cta = "Shop the collection", targetKind = ProductKind.BOX,
+        cta = "Shop Now", productId = "cascade-trunk",
+        targetKind = ProductKind.BOX,
     ),
     Hero(
         id = "hero-diver", eyebrow = "New this season",
         title = "Green\nand deep",
         subtitle = "The Solstice Diver 300, back in emerald.",
-        cta = "View the watch", targetKind = ProductKind.WATCH,
+        cta = "View now", productId = "solstice-diver",
+        targetKind = ProductKind.WATCH,
     ),
     Hero(
         id = "hero-rollers", eyebrow = "Best sellers",
         title = "The roll\nthat started it",
         subtitle = "Soft, compact, and endlessly re-lined.",
-        cta = "See best sellers", targetKind = ProductKind.ACCESSORY,
+        cta = "See best sellers", productId = "oyster-roll",
+        targetKind = ProductKind.BOX,
     ),
 )

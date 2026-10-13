@@ -57,14 +57,9 @@ fun ProductImage(
     shape: Shape = RectangleShape,
     contentScale: ContentScale = ContentScale.FillBounds,
 ) {
-    val image = product.image
-    if (image != null) {
-        Image(
-            painter = painterResource(image),
-            contentDescription = product.name,
-            contentScale = contentScale,
-            modifier = modifier.clip(shape),
-        )
+    val artwork = product.gallery.firstOrNull()
+    if (artwork != null) {
+        ProductArtwork(artwork, product.name, modifier, shape, contentScale)
         return
     }
 
@@ -76,6 +71,23 @@ fun ProductImage(
             ProductKind.ACCESSORY -> drawAccessory(product)
         }
     }
+}
+
+/** Renders a specific gallery shot. The detail pager drives this directly. */
+@Composable
+fun ProductArtwork(
+    artwork: org.jetbrains.compose.resources.DrawableResource,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    shape: Shape = RectangleShape,
+    contentScale: ContentScale = ContentScale.FillBounds,
+) {
+    Image(
+        painter = painterResource(artwork),
+        contentDescription = contentDescription,
+        contentScale = contentScale,
+        modifier = modifier.clip(shape),
+    )
 }
 
 @Composable

@@ -10,7 +10,7 @@
  *   bun run tools/gen-mock-images.ts
  */
 import { createCanvas } from "@napi-rs/canvas";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -23,6 +23,10 @@ const OUT_DIR = join(
 const SEED_CATALOG = join(
   ROOT,
   "composeApp/src/commonMain/kotlin/dev/watchstore/data/catalog/SeedCatalog.kt",
+);
+const PRODUCT_IMAGES_KT = join(
+  ROOT,
+  "composeApp/src/commonMain/kotlin/dev/watchstore/data/catalog/ProductImages.kt",
 );
 
 const W = 1200;
@@ -585,43 +589,142 @@ function vignette(ctx: CanvasRenderingContext2D): void {
   ctx.fillRect(0, 0, W, H);
 }
 
+/**
+ * Emits the Kotlin id -> gallery mapping.
+ *
+ * Compose Resources accessors are compile-time symbols, so the mapping has to be
+ * written out by hand — which means it can drift from the files on disk. Writing
+ * it from the same manifest that produced the images makes that impossible.
+ */
+function emitKotlinMapping(): void {
+  // Group by product id so the lookup returns the whole gallery in one go.
+  const byProduct = new Map<string, string[]>();
+  const importSet = new Set<string>();
+
+  for (const product of MANIFEST) {
+    const shots = product.tones.map((_, i) => fileNameFor(product.id, i, false));
+    if (product.tones.length === 1) shots.push(fileNameFor(product.id, 0, true));
+    shots.forEach((s) => importSet.add(s));
+    byProduct.set(product.id, shots);
+  }
+
+  const body = [...byProduct.entries()]
+    .map(
+      ([id, shots]) =>
+        `    "${id}" to listOf(\n` +
+        shots.map((s) => `        Res.drawable.${s},`).join("\n") +
+        `\n    ),`,
+    )
+    .join("\n");
+
+  const header = `package dev.watchstore.data.catalog
+
+import dev.watchstore.resources.Res
+${[...importSet].sort().map((s) => `import dev.watchstore.resources.${s}`).join("\n")}
+import org.jetbrains.compose.resources.DrawableResource
+
+/**
+ * Product id -> artwork gallery.
+ *
+ * GENERATED FILE — do not edit by hand. Run \`bun run tools/gen-mock-images.ts\`.
+ *
+ * One shot per finish, so choosing a colour swatch changes the photograph.
+ * Single-finish products carry a second, closer angle so the detail pager is
+ * always swipeable.
+ *
+ * Returning an empty list is safe: ProductImage falls back to its drawn
+ * silhouette, so a product can exist before its artwork does.
+ */
+private val galleries: Map<String, List<DrawableResource>> = mapOf(
+${body}
+)
+
+fun galleryFor(id: String): List<DrawableResource> = galleries[id].orEmpty()
+`;
+
+  writeFileSync(PRODUCT_IMAGES_KT, header);
+  console.log(`Wrote ${PRODUCT_IMAGES_KT.replace(ROOT + "\\", "")}`);
+}
+
 // --- main -------------------------------------------------------------------
 
-function fileNameFor(id: string): string {
-  return `products_${id.replace(/-/g, "_")}`;
+function fileNameFor(id: string, finishIndex: number, alt: boolean): string {
+  const base = `products_${id.replace(/-/g, "_")}_f${finishIndex}`;
+  return alt ? `${base}_alt` : base;
 }
+
+/** Closer crop used as a second gallery angle. */
+const ALT_ZOOM = 1.22;
 
 async function main(): Promise<void> {
   verifyAgainstSeedCatalog();
 
   if (!existsSync(OUT_DIR)) mkdirSync(OUT_DIR, { recursive: true });
 
+  // Clear previously generated art so renamed/removed products cannot leave
+  // stale files behind in the resource folder.
+  for (const f of readdirSync(OUT_DIR)) {
+    if (f.startsWith("products_") && f.endsWith(".webp")) {
+      rmSync(join(OUT_DIR, f), { force: true });
+    }
+  }
+
   let bytes = 0;
+  let count = 0;
+
   for (const product of MANIFEST) {
-    const toneName = product.tones[0];
-    const tone = TONES[toneName];
-    if (!tone) throw new Error(`Unknown tone "${toneName}" for ${product.id}`);
+    // One image per finish, so picking a colour swatch changes the photograph.
+    // Single-finish products get a second, closer angle so the detail pager is
+    // always swipeable.
+    const variants: { finish: number; alt: boolean }[] = product.tones.map(
+      (_, i) => ({ finish: i, alt: false }),
+    );
+    if (product.tones.length === 1) {
+      variants.push({ finish: 0, alt: true });
+    }
 
-    const canvas = createCanvas(W, H);
-    const ctx = canvas.getContext("2d")!;
+    for (const v of variants) {
+      const tone = TONES[product.tones[v.finish]];
+      if (!tone) {
+        throw new Error(`Unknown tone "${product.tones[v.finish]}" for ${product.id}`);
+      }
 
-    drawBackdrop(ctx, tone, product.seed);
-    if (product.kind === "WATCH") drawWatch(ctx, tone);
-    else if (product.kind === "BOX") drawBox(ctx, tone);
-    else drawAccessory(ctx, tone);
-    vignette(ctx);
+      const canvas = createCanvas(W, H);
+      const ctx = canvas.getContext("2d")!;
 
-    const encoded = Buffer.from(await canvas.encode("webp", QUALITY));
-    const file = join(OUT_DIR, `${fileNameFor(product.id)}.webp`);
-    writeFileSync(file, encoded);
-    bytes += encoded.byteLength;
+      drawBackdrop(ctx, tone, product.seed);
 
-    console.log(`  ${product.id.padEnd(22)} ${product.kind.padEnd(10)} ${(encoded.byteLength / 1024).toFixed(0).padStart(4)} KB`);
+      ctx.save();
+      if (v.alt) {
+        // Zoom about the frame centre so the product reads as a closer shot.
+        ctx.translate(W / 2, H / 2);
+        ctx.scale(ALT_ZOOM, ALT_ZOOM);
+        ctx.translate(-W / 2, -H / 2);
+      }
+      if (product.kind === "WATCH") drawWatch(ctx, tone);
+      else if (product.kind === "BOX") drawBox(ctx, tone);
+      else drawAccessory(ctx, tone);
+      ctx.restore();
+
+      vignette(ctx);
+
+      const encoded = Buffer.from(await canvas.encode("webp", QUALITY));
+      const file = join(OUT_DIR, `${fileNameFor(product.id, v.finish, v.alt)}.webp`);
+      writeFileSync(file, encoded);
+      bytes += encoded.byteLength;
+      count++;
+    }
+
+    console.log(
+      `  ${product.id.padEnd(22)} ${product.kind.padEnd(10)} ${variants.length} shot(s)`,
+    );
   }
 
   console.log(
-    `\nWrote ${MANIFEST.length} images to ${OUT_DIR.replace(ROOT + "\\", "")} (${(bytes / 1024 / 1024).toFixed(2)} MB total)`,
+    `\nWrote ${count} images to ${OUT_DIR.replace(ROOT + "\\", "")} (${(bytes / 1024 / 1024).toFixed(2)} MB total)`,
   );
+
+  emitKotlinMapping();
 }
 
 main().catch((err) => {

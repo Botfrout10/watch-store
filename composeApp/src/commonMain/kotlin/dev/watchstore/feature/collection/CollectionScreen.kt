@@ -24,9 +24,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import dev.watchstore.core.ui.CatalogCard
 import dev.watchstore.core.ui.EmptyState
 import dev.watchstore.core.ui.PillSearch
-import dev.watchstore.core.ui.ProductCard
 import dev.watchstore.core.ui.SectionHeader
 import dev.watchstore.core.ui.SegmentedTabs
 import dev.watchstore.core.ui.StoreTopBar
@@ -40,6 +40,7 @@ fun CollectionScreen(
     cartCount: Int,
     onProductClick: (String) -> Unit,
     onToggleFavorite: (String) -> Unit,
+    onAddToCart: (String) -> Unit,
     onOpenCart: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -111,9 +112,10 @@ fun CollectionScreen(
             }
         } else {
             items(visible, key = { it.id }) { product ->
-                ProductCard(
+                CatalogCard(
                     product = product,
                     onClick = { onProductClick(product.id) },
+                    onAddToCart = { onAddToCart(product.id) },
                     isFavorite = product.id in favorites,
                     onToggleFavorite = { onToggleFavorite(product.id) },
                 )

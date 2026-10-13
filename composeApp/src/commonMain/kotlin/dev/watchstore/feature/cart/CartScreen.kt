@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.watchstore.core.ui.EmptyState
+import dev.watchstore.core.ui.Glass
+import dev.watchstore.core.ui.GlassCircleButton
 import dev.watchstore.core.ui.GoldButton
 import dev.watchstore.core.ui.ProductRow
 import dev.watchstore.core.ui.QuantityStepper
@@ -32,6 +35,10 @@ import dev.watchstore.core.ui.StoreTopBar
 import dev.watchstore.core.ui.SummaryRow
 import dev.watchstore.data.model.CartLine
 import dev.watchstore.data.model.formatPrice
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.Color
 
 private const val SHIPPING_FLAT_CENTS = 1_200L
 
@@ -42,7 +49,7 @@ fun CartScreen(
     onProductClick: (String) -> Unit,
     onSetQuantity: (String, Int) -> Unit,
     onBrowse: () -> Unit,
-    onOpenCart: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val subtotal = lines.sumOf { it.product.priceCents * it.quantity }
@@ -63,8 +70,24 @@ fun CartScreen(
             ) {
                 StoreTopBar(
                     title = "Bag",
-                    onOpenCart = onOpenCart,
+                    onOpenCart = {},
                     cartCount = cartCount,
+                    leading = {
+                        GlassCircleButton(
+                            onClick = onBack,
+                            contentDescription = "Back",
+                            size = 40.dp,
+                            background = Color.Transparent,
+                            borderColor = Color.Transparent,
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    },
                 )
             }
         }

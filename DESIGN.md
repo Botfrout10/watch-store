@@ -53,76 +53,55 @@ To restore branded fonts later, change only `PlayfairFamily` / `InterFamily` in
 
 ## Shape & elevation
 
-Generous radii are the cheapest signal of “premium” — they echo the rounded case
+Generous radii are the cheapest signal of "premium" — they echo the rounded case
 profiles of the products.
 
-- Cards `22dp`, panels `18–24dp`, hero `32dp`
+- Cards `14dp`, panels `14–20dp`, hero `24dp`, detail sheet top `26dp`
 - CTAs, search, chips: fully rounded pills
 - Elevation is expressed with hairline `outline` borders, **not** drop shadows.
   Shadows read as cheap against warm dark; borders read as precise.
 
-## Imagery
+## Glass
 
-Every product gets its **own generated shot** — one shared placeholder would read
-as clip-art next to the typography and undo the premium tone.
+Search field, filter button, category chips, the detail screen's back/heart/share
+buttons and the pagination pill all use a frosted treatment: a translucent white
+wash plus a light hairline edge.
 
-`tools/gen-mock-images.ts` (Bun + `@napi-rs/canvas`) renders one 1200×1500 (4:5)
-WebP per product into `composeResources/drawable/`. Each is composed on a warm
-**studio sweep** that is deliberately lighter than the app background, so dark
-products (Obsidian, Midnight) still read as photographs rather than black
-rectangles. Every asset gets a vignette, so nothing looks like a flat fill.
+True backdrop blur is deliberately avoided — `Modifier.blur` is Android-only and
+API 31+, so a real blur would look different on iOS. On a warm dark ground the
+wash + hairline reads as glass and stays identical across targets.
 
-- **Watches** — brushed-metal case via a six-stop linear gradient, tapered strap
-  with stitching, recessed dial, 12 hour markers (4 longer), hands set to 10:10,
-  crystal sheen and a rim light on the lower right.
-- **Boxes** — lid proud of the body, gradient body with a left-edge highlight, a
-  seam line, a base shadow for weight, and a brass clasp with a keyhole.
-- **Accessories** — band with link separations, end lugs, gold clasp.
+## Component sizing
 
-Tone and backdrop vary per product (`artSeed`), so the catalogue reads as one
-curated set rather than a repeat.
+Measured against the reference mock (phone width ≈ 411dp, 0.893 dp per mock px).
 
-Three rules hold in the app:
-
-1. **Aspect ratio is owned by the caller**, never the renderer — `4:5` for cards,
-   `3:4` for detail. Hero artwork is 4:5, so the detail hero crops rather than
-   squashes.
-2. **`ProductImage` falls back to a drawn silhouette** when a product has no
-   artwork, so the catalogue never breaks.
-3. **Soft shadows are built from gradients**, not blur filters, which are not
-   available identically across targets.
-
-Artwork is **committed**, not gitignored: Compose Resources accessors are
-compile-time symbols, so a clone without the files would not compile. The whole
-set is ~0.3 MB and reproducible from the generator.
+| Component | Size |
+|---|---|
+| Search field | 44dp pill, 14sp placeholder, 17dp icon trailing |
+| Filter button | 44dp circle |
+| Hero panel | 312dp tall, 24dp corners |
+| Hero CTA | 34dp pill, 13sp |
+| Pagination dots | 18×6dp active pill, 6dp inactive, 5dp gap, on a glass pill |
+| Catalogue card | image 0.94 aspect, footer 55dp, corner 14dp |
+| Card add-to-cart | 36dp gold circle |
+| Bottom bar | 4 tabs, 22dp icons, 11sp labels |
+| Detail controls | 44dp glass circles |
+| Finish swatch | 34dp, 38dp when active |
+| Detail CTA | 56dp pill + 56dp outlined button, 16dp corners |
 
 ## Components
 
 | Component | Rule |
 |---|---|
-| `GoldButton` | The one gold CTA per screen. 56dp, pill, 14sp semibold. |
-| `GhostIconButton` | Circular, outlined, transparent. Everything secondary. |
-| `PriceText` | Serif, gold, always two decimals so columns align. |
-| `ProductCard` | Brand label → serif name → gold price. Heart overlays the image. |
-| `PillSearch` | Pill outline, quiet placeholder, gold cursor. |
-| `SegmentedTabs` | One selected gold pill inside a bordered track. |
+| `GoldButton` / hero CTA | Gold means primary action or price. Nothing else. |
+| `GlassCircleButton` | Every secondary icon control. Circular, hairline. |
+| `CatalogCard` | Artwork, then a footer strip: name, price, gold cart disc. |
+| `PillSearch` | Glass pill, placeholder left, search icon right. |
+| `FinishSwatch` | Colour dot; selected grows and gains a gold ring. |
 | `HighlightStrip` | Icon / title / micro-caption. The caption supports, never competes. |
-| `KindChip` | Low-contrast surface pill, marks category on imagery. |
+| `DotsPill` | Hero and detail pagination on a translucent pill. |
+| `FilterGlyph` | Hand-drawn sliders — no filter icon exists in core Material Icons. |
 
-Icons in the highlight strip are **hand-drawn on Canvas** (`HighlightGlyph.kt`),
-not Material Icons — the stock set is generic and pulls the eye off-brand.
-
-## Interaction
-
-- Tab roots reset the back stack; detail pushes onto it. System back pops.
-- The bottom bar is custom, not `NavigationBar`: the active state needs a gold
-  pill *and* a short rule above the icon, which the stock indicator slot cannot
-  express.
-- Every tappable icon has a `contentDescription`.
-
-## Signature feature
-
-**“Complete the set”** on product detail. Because the store sells watches *and*
-cases separately, a watch page offers its matching case as a one-tap add. This is
-the thing a two-category store can do that the reference cannot — it is why the
-catalogue is split this way.
+Icons in the highlight strip and the filter button are **hand-drawn on Canvas**,
+not Material Icons: the core set is generic and pulls the eye off-brand, and
+Extended is frozen at 1.7.3.
