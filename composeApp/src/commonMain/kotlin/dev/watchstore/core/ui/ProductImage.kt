@@ -1,0 +1,347 @@
+package dev.watchstore.core.ui
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.lerp
+import dev.watchstore.core.designsystem.BaseDark
+import dev.watchstore.core.designsystem.GoldSoft
+import dev.watchstore.data.model.Product
+import dev.watchstore.data.model.ProductKind
+import dev.watchstore.data.model.color
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.sin
+
+/** Cards use 4:5 so a 2-up grid tiles without ragged bottoms. */
+const val CARD_ASPECT = 4f / 5f
+
+/** Detail hero is taller and more cinematic. */
+const val HERO_ASPECT = 3f / 4f
+
+/**
+ * Stand-in product "photography".
+ *
+ * Draws a lit silhouette on a warm seeded backdrop. Two properties matter and
+ * are deliberate:
+ *
+ *  1. **Every product gets a different backdrop**, derived from `artSeed`, so the
+ *     catalogue reads as a set rather than one placeholder repeated.
+ *  2. **The aspect ratio is fixed and external to this composable**, so when real
+ *     imagery arrives it drops into the identical slot without reflowing layout.
+ *
+ * When the generated WebP assets land (Phase B), replace the body of this
+ * composable with `Image(painterResource(...))`. Nothing above it changes.
+ */
+@Composable
+fun ProductImage(
+    product: Product,
+    modifier: Modifier = Modifier,
+    shape: Shape = RectangleShape,
+) {
+    Canvas(modifier.clip(shape)) {
+        drawBackdrop(product)
+        when (product.kind) {
+            ProductKind.WATCH -> drawWatch(product)
+            ProductKind.BOX -> drawBox(product)
+            ProductKind.ACCESSORY -> drawAccessory(product)
+        }
+    }
+}
+
+@Composable
+fun ProductImageCard(
+    product: Product,
+    modifier: Modifier = Modifier,
+    shape: Shape = RectangleShape,
+) {
+    ProductImage(
+        product = product,
+        modifier = modifier.aspectRatio(CARD_ASPECT),
+        shape = shape,
+    )
+}
+
+@Composable
+fun ProductImageHero(
+    product: Product,
+    modifier: Modifier = Modifier,
+    shape: Shape = RectangleShape,
+) {
+    ProductImage(
+        product = product,
+        modifier = modifier.aspectRatio(HERO_ASPECT),
+        shape = shape,
+    )
+}
+
+// ---------------------------------------------------------------------------
+// Drawing
+// ---------------------------------------------------------------------------
+
+private val toneOf: (Product) -> Color = { product ->
+    product.finishes.firstOrNull()?.tone?.color() ?: GoldSoft
+}
+
+private fun DrawScope.drawBackdrop(product: Product) {
+    val tone = toneOf(product)
+    val seed = product.artSeed
+
+    // Vary spotlight height and warmth per product so no two cards look identical.
+    val spread = 0.88f + (seed % 4) * 0.05f
+    val warmth = 0.06f + (seed % 5) * 0.015f
+    val spotY = 0.28f + (seed % 3) * 0.05f
+
+    val deep = lerp(BaseDark, tone, warmth * 0.55f)
+    val mid = lerp(BaseDark, tone, warmth * 1.9f)
+    val spot = lerp(BaseDark, tone, warmth * 3.6f + 0.05f)
+
+    drawRect(
+        brush = Brush.radialGradient(
+            0f to spot,
+            0.52f to mid,
+            1f to deep,
+            center = Offset(size.width * 0.5f, size.height * spotY),
+            radius = maxOf(size.width, size.height) * spread,
+        ),
+    )
+}
+
+/**
+ * Soft ground shadow built from stacked translucent ovals — a cross-platform
+ * stand-in for a blur, which is not available identically on every target.
+ */
+private fun DrawScope.drawContactShadow(cx: Float, cy: Float, rx: Float, ry: Float) {
+    val steps = 7
+    for (i in 0 until steps) {
+        val t = 1f - i.toFloat() / steps
+        val sx = rx * (0.55f + 0.45f * t)
+        val sy = ry * (0.55f + 0.45f * t)
+        drawOval(
+            color = Color.Black.copy(alpha = 0.055f * (1f - t) + 0.010f),
+            topLeft = Offset(cx - sx, cy - sy),
+            size = Size(sx * 2f, sy * 2f),
+        )
+    }
+}
+
+private fun DrawScope.drawWatch(product: Product) {
+    val tone = toneOf(product)
+    val cx = size.width / 2f
+    val cy = size.height * 0.47f
+    val r = min(size.width, size.height) * 0.235f
+
+    drawContactShadow(cx, cy + r * 1.42f, r * 1.15f, r * 0.20f)
+
+    // Strap, top and bottom, receding behind the case.
+    val strapColor = lerp(tone, Color.Black, 0.52f)
+    val strapW = r * 0.78f
+    val strapH = r * 0.95f
+    drawRoundRect(
+        color = lerp(strapColor, Color.Black, 0.25f),
+        topLeft = Offset(cx - strapW / 2f, cy - r * 1.92f),
+        size = Size(strapW, strapH),
+        cornerRadius = CornerRadius(strapW * 0.22f),
+    )
+    drawRoundRect(
+        color = strapColor,
+        topLeft = Offset(cx - strapW / 2f, cy + r * 0.95f),
+        size = Size(strapW, strapH),
+        cornerRadius = CornerRadius(strapW * 0.22f),
+    )
+
+    // Case: off-centre radial so the metal reads as lit from upper-left.
+    drawCircle(
+        brush = Brush.radialGradient(
+            0f to lerp(tone, Color.White, 0.42f),
+            0.5f to tone,
+            1f to lerp(tone, Color.Black, 0.62f),
+            center = Offset(cx - r * 0.38f, cy - r * 0.42f),
+            radius = r * 1.7f,
+        ),
+        radius = r,
+        center = Offset(cx, cy),
+    )
+
+    // Bezel ring.
+    drawCircle(
+        color = lerp(tone, Color.White, 0.20f),
+        radius = r,
+        center = Offset(cx, cy),
+        style = Stroke(width = r * 0.075f),
+    )
+
+    // Dial.
+    val dialR = r * 0.80f
+    drawCircle(
+        brush = Brush.radialGradient(
+            0f to lerp(tone, Color.Black, 0.50f),
+            1f to lerp(tone, Color.Black, 0.80f),
+            center = Offset(cx - dialR * 0.32f, cy - dialR * 0.32f),
+            radius = dialR * 1.9f,
+        ),
+        radius = dialR,
+        center = Offset(cx, cy),
+    )
+
+    // Hour markers.
+    val marker = GoldSoft.copy(alpha = 0.72f)
+    for (i in 0 until 12) {
+        val a = Math.toRadians((i * 30 - 90).toDouble())
+        val cosA = cos(a).toFloat()
+        val sinA = sin(a).toFloat()
+        val long = i % 3 == 0
+        val rOuter = dialR * (if (long) 0.93f else 0.86f)
+        val rInner = dialR * 0.74f
+        drawLine(
+            color = marker,
+            start = Offset(cx + rInner * cosA, cy + rInner * sinA),
+            end = Offset(cx + rOuter * cosA, cy + rOuter * sinA),
+            strokeWidth = dialR * (if (long) 0.05f else 0.032f),
+        )
+    }
+
+    // Hands.
+    drawLine(
+        color = GoldSoft,
+        start = Offset(cx, cy),
+        end = Offset(cx + dialR * 0.44f, cy - dialR * 0.44f),
+        strokeWidth = dialR * 0.07f,
+    )
+    drawLine(
+        color = GoldSoft.copy(alpha = 0.85f),
+        start = Offset(cx, cy),
+        end = Offset(cx - dialR * 0.30f, cy - dialR * 0.18f),
+        strokeWidth = dialR * 0.055f,
+    )
+
+    // Sheen across the upper-left of the crystal.
+    drawCircle(
+        brush = Brush.radialGradient(
+            0f to Color.White.copy(alpha = 0.20f),
+            0.65f to Color.White.copy(alpha = 0.04f),
+            1f to Color.Transparent,
+            center = Offset(cx - dialR * 0.40f, cy - dialR * 0.44f),
+            radius = dialR * 1.05f,
+        ),
+        radius = dialR,
+        center = Offset(cx, cy),
+    )
+}
+
+private fun DrawScope.drawBox(product: Product) {
+    val tone = toneOf(product)
+    val w = size.width * 0.48f
+    val h = size.height * 0.28f
+    val cx = size.width / 2f
+    val cy = size.height * 0.52f
+    val left = cx - w / 2f
+    val top = cy - h / 2f
+
+    drawContactShadow(cx, top + h * 1.30f, w * 0.60f, h * 0.16f)
+
+    // Lid, sitting slightly proud of the body.
+    val lidH = h * 0.30f
+    drawRoundRect(
+        brush = Brush.verticalGradient(
+            0f to lerp(tone, Color.White, 0.28f),
+            1f to lerp(tone, Color.White, 0.04f),
+        ),
+        topLeft = Offset(left, top - lidH * 0.78f),
+        size = Size(w, lidH * 1.35f),
+        cornerRadius = CornerRadius(lidH * 0.38f),
+    )
+
+    // Body.
+    drawRoundRect(
+        brush = Brush.verticalGradient(
+            0f to lerp(tone, Color.White, 0.08f),
+            0.55f to tone,
+            1f to lerp(tone, Color.Black, 0.60f),
+        ),
+        topLeft = Offset(left, top),
+        size = Size(w, h),
+        cornerRadius = CornerRadius(h * 0.14f),
+    )
+
+    // Base shadow line for weight.
+    drawRoundRect(
+        color = Color.Black.copy(alpha = 0.28f),
+        topLeft = Offset(left, top + h * 0.86f),
+        size = Size(w, h * 0.14f),
+        cornerRadius = CornerRadius(h * 0.06f),
+    )
+
+    // Brass clasp — the one bright accent, echoing the CTA colour.
+    drawRoundRect(
+        brush = Brush.verticalGradient(
+            0f to lerp(GoldSoft, Color.White, 0.30f),
+            1f to GoldSoft,
+        ),
+        topLeft = Offset(cx - w * 0.055f, top + h * 0.40f),
+        size = Size(w * 0.11f, h * 0.17f),
+        cornerRadius = CornerRadius(h * 0.05f),
+    )
+}
+
+private fun DrawScope.drawAccessory(product: Product) {
+    val tone = toneOf(product)
+    val w = size.width * 0.46f
+    val h = size.height * 0.20f
+    val cx = size.width / 2f
+    val cy = size.height * 0.50f
+    val left = cx - w / 2f
+    val top = cy - h / 2f
+
+    drawContactShadow(cx, top + h * 1.5f, w * 0.52f, h * 0.18f)
+
+    // Main band.
+    drawRoundRect(
+        brush = Brush.horizontalGradient(
+            0f to lerp(tone, Color.Black, 0.35f),
+            0.4f to lerp(tone, Color.White, 0.18f),
+            1f to lerp(tone, Color.Black, 0.42f),
+        ),
+        topLeft = Offset(left, top),
+        size = Size(w, h),
+        cornerRadius = CornerRadius(h * 0.34f),
+    )
+
+    // Two lugs.
+    val lugW = w * 0.10f
+    drawRoundRect(
+        color = lerp(tone, Color.White, 0.10f),
+        topLeft = Offset(left - lugW * 0.9f, top + h * 0.26f),
+        size = Size(lugW * 1.6f, h * 0.48f),
+        cornerRadius = CornerRadius(lugW * 0.4f),
+    )
+    drawRoundRect(
+        color = lerp(tone, Color.White, 0.10f),
+        topLeft = Offset(left + w - lugW * 0.7f, top + h * 0.26f),
+        size = Size(lugW * 1.6f, h * 0.48f),
+        cornerRadius = CornerRadius(lugW * 0.4f),
+    )
+
+    // Gold clasp in the middle.
+    drawRoundRect(
+        brush = Brush.verticalGradient(
+            0f to lerp(GoldSoft, Color.White, 0.28f),
+            1f to GoldSoft,
+        ),
+        topLeft = Offset(cx - w * 0.07f, top + h * 0.24f),
+        size = Size(w * 0.14f, h * 0.52f),
+        cornerRadius = CornerRadius(h * 0.12f),
+    )
+}
