@@ -58,18 +58,36 @@
   disk cannot disagree after a failed write
 - Verified by force-stopping the app and relaunching
 
+**Typography**
+- Playfair Display + Inter bundled as variable TTFs and packaged into the APK
+- CMP 1.12.1 has no `Font(FontResource)` on Android, so only `loadBrandFonts()`
+  is `expect`/`actual`; families travel via a `LocalBrandFonts` CompositionLocal
+  and the whole type scale stays shared
+- Variable fonts need `FontVariation` per weight, or every weight renders at the
+  default instance
+- Screen titles on Collection/Saved were Inter while Home used the serif — now
+  consistent
+
 **Docs**
 - `AGENTS.md` — commands plus the environment gotchas found the hard way
 - `DESIGN.md`, `ARCHITECTURE.md`, `PLAN.md`
 
 ## Next
 
-### Also worth doing
+### Blocked externally — do not retry without new upstream
 
-- Real navigation library once `navigation3-ui` resolves to a non-stub artifact
-- Restore branded fonts (Playfair + Inter) if CMP gains `Font(FontResource)`
+- **Nav3** — `navigation3-ui` ships an empty stub aar (283-byte `classes.jar`).
+  Navigation stays a plain back stack in `WatchStoreApp.kt`. Revisit if JetBrains
+  republishes.
+- **`@Preview`** — `ui-tooling-preview` is also a stub (291 bytes), so the common
+  preview annotation cannot be imported. Note that even if it resolved,
+  rendering needs `ui-tooling` on the `:composeApp` Android variant, and the
+  Android-KMP library plugin has no debug-only dependency slot — so tooling would
+  ship in release builds. Revisit alongside Nav3.
+
+### Still worth doing
+
 - Wire Ktor behind `ProductRepository` when a backend exists
-- `@Preview` coverage for both colour schemes
 - Tighten screens to accept UI state instead of the view model
 - Real 3D: Compose Scene / Filament-KMP both work across Android and iOS from
   Kotlin, but need actual `.glb` models. The generated imagery is the current

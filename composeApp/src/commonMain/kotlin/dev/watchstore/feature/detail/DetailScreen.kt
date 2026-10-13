@@ -45,7 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.watchstore.core.designsystem.PillShape
-import dev.watchstore.core.designsystem.PlayfairFamily
+import dev.watchstore.core.designsystem.brandDisplay
 import dev.watchstore.core.ui.DotsPill
 import dev.watchstore.core.ui.FinishSwatch
 import dev.watchstore.core.ui.Glass
@@ -214,7 +214,7 @@ fun DetailScreen(
                 PriceText(
                     cents = product.priceCents,
                     style = MaterialTheme.typography.headlineLarge.copy(
-                        fontFamily = PlayfairFamily,
+                        fontFamily = brandDisplay(),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 23.sp,
                     ),

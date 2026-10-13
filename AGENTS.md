@@ -70,6 +70,27 @@ These cost real time to rediscover. They are all deliberate.
    reach the APK and the app dies at runtime with `MissingResourceException`.
    This cost a debugging round — treat a silent `NO-SOURCE` as a red flag.
 
+10. **Several Compose Multiplatform Android variants resolve to empty stubs.**
+    `navigation3-ui` ships a 283-byte `classes.jar`, `ui-tooling-preview` 291
+    bytes — both aars are valid but contain nothing. So **Nav3** and the common
+    **`@Preview`** annotation cannot be imported; every unresolved reference to
+    them is this, not a bad import.
+
+    Before assuming a CMP dependency is usable, check its real size:
+
+    ```powershell
+    $aar = Get-ChildItem "$env:USERPROFILE\.gradle\caches\modules-2\files-2.1\<group>\<artifact>" -Recurse -Filter *.aar | Select -First 1
+    "size: $($aar.Length)"
+    ```
+
+    Anything in the low kilobytes is a stub. Note `ui-text` looks the same but
+    still works — so prefer a compile probe over reading sizes alone.
+
+11. **Bundled fonts need `expect`/`actual`.** There is no `Font(FontResource)`
+    overload, so `BrandFonts.android.kt` loads the TTFs through `AssetManager`
+    with `FontVariation`. The asset path there must stay in sync with
+    `packageOfResClass` in `composeApp/build.gradle.kts`.
+
 ## Tools
 
 Product artwork is generated, not hand-drawn:

@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.watchstore.core.designsystem.brandPriceStyle
 import dev.watchstore.data.model.Highlight
 
 /**
@@ -112,7 +113,7 @@ fun SummaryRow(
         if (emphasise) {
             Text(
                 text = value,
-                style = dev.watchstore.core.designsystem.PriceStyle,
+                style = brandPriceStyle(),
                 color = MaterialTheme.colorScheme.primary,
             )
         } else {

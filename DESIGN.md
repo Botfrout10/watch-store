@@ -35,21 +35,32 @@ Nothing else gets the accent.
 
 | Role | Family | Notes |
 |---|---|---|
-| Display / product names / prices | Serif (`FontFamily.Serif`) | 19–44sp, tight tracking |
-| Labels, body, everything functional | Sans (`FontFamily.SansSerif`) | 11–15sp |
+| Display / product names / prices | **Playfair Display** | 19–44sp, tight tracking |
+| Labels, body, everything functional | **Inter** | 11–15sp |
 
-Full scale in `core/designsystem/Type.kt`.
+Both are bundled variable TTFs in `composeResources/font/` and packaged into the
+APK under `assets/composeResources/<package>/font/`.
 
-### Known compromise
+### How they load, and why it's platform-specific
 
-The intended pairing was **Playfair Display + Inter**, bundled as variable TTFs.
-Compose Multiplatform 1.12.1 exposes no `Font(FontResource)` overload on Android,
-so that path does not compile. The app currently resolves platform families —
-Noto Serif + Roboto on Android, New York + SF Pro on iOS. This reads well and
-ships identical metrics on both platforms.
+Compose Multiplatform 1.12.1 exposes **no `Font(FontResource)` overload** on
+Android, so the bundled fonts cannot be loaded from `commonMain`. Only
+`loadBrandFonts()` is `expect`/`actual` — the type scale, the font *roles* and
+every call site stay shared, and the resolved families travel through a
+`LocalBrandFonts` CompositionLocal.
 
-To restore branded fonts later, change only `PlayfairFamily` / `InterFamily` in
-`Type.kt`. Nothing else references the font.
+The Android actual loads each file through `AssetManager` and selects weight with
+`FontVariation`, since both faces are variable fonts — without that, every weight
+renders at the default instance.
+
+`FallbackBrandFonts` (platform serif/sans) is used if the actual cannot obtain a
+context, so the theme degrades to Noto Serif + Roboto rather than failing.
+
+Two consequences to keep in mind:
+- The asset prefix in `BrandFonts.android.kt` must track `packageOfResClass` in
+  `composeApp/build.gradle.kts`. Rename one, update the other.
+- If CMP ever gains `Font(FontResource)`, delete `BrandFonts.android.kt` and load
+  the resources directly.
 
 ## Shape & elevation
 

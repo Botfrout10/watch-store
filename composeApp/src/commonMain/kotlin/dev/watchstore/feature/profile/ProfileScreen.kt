@@ -25,7 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import dev.watchstore.core.designsystem.PlayfairFamily
+import dev.watchstore.core.designsystem.brandDisplay
 import dev.watchstore.core.ui.StoreTopBar
 
 @Composable
@@ -78,7 +78,7 @@ fun ProfileScreen(
                         Text(
                             text = "Guest",
                             style = MaterialTheme.typography.headlineSmall.copy(
-                                fontFamily = PlayfairFamily,
+                                fontFamily = brandDisplay(),
                             ),
                             color = MaterialTheme.colorScheme.onBackground,
                         )

@@ -55,7 +55,7 @@ import androidx.compose.ui.unit.sp
 import dev.watchstore.core.designsystem.BaseDark
 import dev.watchstore.core.designsystem.Gold
 import dev.watchstore.core.designsystem.PillShape
-import dev.watchstore.core.designsystem.PlayfairFamily
+import dev.watchstore.core.designsystem.brandDisplay
 import dev.watchstore.core.ui.CatalogCard
 import dev.watchstore.core.ui.DotsPill
 import dev.watchstore.core.ui.FilterGlyph
@@ -237,7 +237,7 @@ private fun HomeTopBar(
         Text(
             text = "Atelier",
             style = MaterialTheme.typography.titleMedium.copy(
-                fontFamily = PlayfairFamily,
+                fontFamily = brandDisplay(),
                 fontSize = 17.sp,
             ),
             color = MaterialTheme.colorScheme.onBackground,

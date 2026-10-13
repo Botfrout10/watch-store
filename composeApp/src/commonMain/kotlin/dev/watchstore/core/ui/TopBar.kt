@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.watchstore.core.designsystem.brandDisplay
 
 /**
  * Centered title between two actions, mirroring the reference layout.
@@ -39,7 +40,7 @@ fun StoreTopBar(
         Spacer(Modifier.width(8.dp))
         Text(
             text = title,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.copy(fontFamily = brandDisplay()),
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.weight(1f),
         )

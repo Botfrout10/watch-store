@@ -33,7 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.watchstore.core.designsystem.PillShape
-import dev.watchstore.core.designsystem.PlayfairFamily
+import dev.watchstore.core.designsystem.brandDisplay
 import dev.watchstore.data.model.Product
 
 /**
@@ -108,7 +108,7 @@ fun CatalogCard(
                 PriceText(
                     cents = product.priceCents,
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        fontFamily = PlayfairFamily,
+                        fontFamily = brandDisplay(),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 12.sp,
                     ),

@@ -19,7 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.watchstore.core.designsystem.PlayfairFamily
+import dev.watchstore.core.designsystem.brandDisplay
 import dev.watchstore.data.model.Product
 
 /**
@@ -51,7 +51,7 @@ fun ProductRow(
             Text(
                 text = product.name,
                 style = MaterialTheme.typography.bodyLarge.copy(
-                    fontFamily = PlayfairFamily,
+                    fontFamily = brandDisplay(),
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp,
                 ),

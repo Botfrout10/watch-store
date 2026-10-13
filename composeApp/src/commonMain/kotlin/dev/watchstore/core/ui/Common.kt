@@ -26,10 +26,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.watchstore.core.designsystem.PillShape
-import dev.watchstore.core.designsystem.PriceStyle
+import dev.watchstore.core.designsystem.brandPriceStyle
 
 @Composable
 fun SectionHeader(
@@ -67,12 +68,12 @@ fun SectionHeader(
 fun PriceText(
     cents: Long,
     modifier: Modifier = Modifier,
-    style: androidx.compose.ui.text.TextStyle = PriceStyle,
+    style: TextStyle? = null,
     color: Color = MaterialTheme.colorScheme.primary,
 ) {
     Text(
         text = dev.watchstore.data.model.formatPrice(cents),
-        style = style,
+        style = style ?: brandPriceStyle(),
         color = color,
         modifier = modifier,
     )
