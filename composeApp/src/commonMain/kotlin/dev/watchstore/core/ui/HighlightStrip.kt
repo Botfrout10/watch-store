@@ -107,8 +107,14 @@ fun SummaryRow(
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
         )
+        // Style the already-formatted string rather than re-parsing it back to
+        // cents — "$1,240.00".toLongOrNull() is null, which silently showed $0.00.
         if (emphasise) {
-            PriceText(cents = value.toLongOrNull() ?: 0L)
+            Text(
+                text = value,
+                style = dev.watchstore.core.designsystem.PriceStyle,
+                color = MaterialTheme.colorScheme.primary,
+            )
         } else {
             Text(
                 text = value,

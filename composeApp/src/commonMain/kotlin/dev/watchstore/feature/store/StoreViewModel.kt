@@ -36,6 +36,11 @@ class StoreViewModel(
     fun byKind(kind: ProductKind): List<Product> = repository.byKind(kind)
     fun search(query: String): List<Product> = repository.search(query)
 
+    fun products(): List<Product> = repository.products()
+
+    fun favoriteProducts(): List<Product> =
+        _favorites.value.mapNotNull(repository::byId)
+
     fun cartCount(): Int = _cart.value.values.sum()
 
     fun cartLines(): List<CartLine> = _cart.value.mapNotNull { (id, qty) ->

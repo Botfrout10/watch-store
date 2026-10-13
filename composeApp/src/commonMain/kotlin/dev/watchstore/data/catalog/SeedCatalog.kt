@@ -80,7 +80,8 @@ private fun watchBox(
     name = name,
     brand = "Atelier Case",
     tagline = tagline,
-    description = "Holds $slots watches. $BOX_WOOD, $BOX_INTERIOR and a $BOX_LOCK.",
+    description = "Holds $slots watches, with a hand-finished hardwood body, " +
+        "a soft velvet interior and a secure brass lock.",
     priceCents = price,
     finishes = tones,
     highlights = listOf(
